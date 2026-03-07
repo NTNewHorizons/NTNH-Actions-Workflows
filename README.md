@@ -1,4 +1,4 @@
-# Reusable workflows for GTNH repos
+# Reusable workflows for NTNH repos
 
 Usage:
 ```yaml

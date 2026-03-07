@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   build-and-test:
-    runs-on: blacksmith-4vcpu-ubuntu2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
     - name: Install Ubuntu dependencies
       run: |

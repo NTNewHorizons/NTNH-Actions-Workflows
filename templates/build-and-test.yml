@@ -1,0 +1,17 @@
+name: Build and test
+
+on:
+  pull_request:
+    branches: [ master, main ]
+  push:
+    branches: [ master, main ]
+
+jobs:
+  build-and-test:
+    uses: NTNewHorizons/NTNH-Actions-Workflows/.github/workflows/build-and-test.yml@master
+    secrets: inherit
+#    with:
+#      timeout: 150
+#      workspace: setupDecompWorkspace
+#      client-only: false
+#      disable-server-auto-stop: false

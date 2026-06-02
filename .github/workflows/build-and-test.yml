@@ -21,6 +21,16 @@ on:
         required: false
         default: false
         type: boolean
+      disable-server-auto-stop:
+        description: 'Do not automatically stop runServer by writing "stop" to stdin'
+        required: false
+        default: false
+        type: boolean
+      disable-spotless-pr:
+        description: 'Do not run spotless PR task'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -42,8 +52,8 @@ jobs:
     - name: Checkout workflows repo
       uses: actions/checkout@v5
       with:
-        repository: GTNewHorizons/GTNH-Actions-Workflows
-        path: .gtnh-workflows
+        repository: NTNewHorizons/NTNH-Actions-Workflows
+        path: .ntnh-workflows
         fetch-depth: 0
 
     - name: Determine JDK versions
@@ -84,38 +94,32 @@ jobs:
     - name: Compile the mod
       run: ./gradlew --build-cache --info --stacktrace assemble
 
-    - name: Attach compilation artifacts
-      uses: actions/upload-artifact@v5
-      with:
-        name: ${{ github.repository_id }}-build-libs
-        path: build/libs/
-        retention-days: 90
-
     - name: Run post-build checks
       id: build_mod
       run: xvfb-run --server-args="-screen 0 1366x768x24" ./gradlew --build-cache --info --stacktrace build
 
     - name: Attach gradle reports
       if: failure() && steps.build_mod.conclusion == 'failure'
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       continue-on-error: true
       with:
         name: ${{ github.repository_id }}-reports
         path: build/reports/
-        retention-days: 31
+        retention-days: 90
 
     - name: Attempt to make a PR fixing spotless errors
       if: >-
-        ${{ failure() && steps.build_mod.conclusion == 'failure'
-          && github.event_name == 'pull_request'
-          && !github.event.pull_request.draft
-          && github.event.pull_request.head.repo.full_name == github.repository }}
+        ${{ !inputs.disable-spotless-pr &&
+        failure() && steps.build_mod.conclusion == 'failure' &&
+        github.event_name == 'pull_request' &&
+        !github.event.pull_request.draft &&
+        github.event.pull_request.head.repo.full_name == github.repository }}
       run: |
         git reset --hard
         git checkout "${PR_BRANCH}"
         ./gradlew --build-cache --info --stacktrace spotlessApply || exit 1
         git diff --exit-code && exit 1
-        git config user.name "GitHub GTNH Actions"
+        git config user.name "GitHub NTNH Actions"
         git config user.email "<>"
         git switch -c "${FIXED_BRANCH}"
         git commit -am "spotlessApply"
@@ -142,14 +146,19 @@ jobs:
         # Set a constant seed with a village at spawn
         echo "level-seed=-6202107849386030209\nonline-mode=true\n" > run/server.properties
         echo "level-seed=-6202107849386030209\nonline-mode=true\n" > run/server/server.properties
-        echo "stop" > run/stop.txt
-        timeout ${{ inputs.timeout }} ./gradlew --build-cache --info --stacktrace runServer 2>&1 < run/stop.txt | tee -a server.log || true
+
+        server_stdin=/dev/null
+        if [[ "${{ inputs.disable-server-auto-stop }}" != "true" ]]; then
+          echo "stop" > run/stop.txt
+          server_stdin=run/stop.txt
+        fi
+        timeout ${{ inputs.timeout }} ./gradlew --build-cache --info --stacktrace runServer 2>&1 < "${server_stdin}" | tee -a server.log || true
 
     - name: Test no errors reported during server run
       if: ${{ !inputs.client-only }}
       run: |
-        chmod +x .gtnh-workflows/scripts/test_no_error_reports
-        .gtnh-workflows/scripts/test_no_error_reports
+        chmod +x .ntnh-workflows/scripts/test_no_error_reports
+        .ntnh-workflows/scripts/test_no_error_reports
 
     - name: Test no prerelease dependencies used
       run: |
@@ -172,3 +181,106 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PR_NUMBER: ${{ github.event.number }}
+
+    - name: Attach compilation artifacts as ZIP
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ github.repository_id }}-build-libs
+        path: build/libs/
+        retention-days: 90
+
+    - name: Find individual compilation artifacts
+      id: find-artifacts
+      shell: bash
+      run: |
+        mapfile -t files < <(find build/libs -maxdepth 1 -type f -name '*.jar' | sort)
+
+        if (( ${#files[@]} > 10 )); then
+          echo "::warning::Found ${#files[@]} files in build/libs, but only the first 10 will be uploaded individually."
+        fi
+
+        for i in {0..9}; do
+          if [[ -n "${files[$i]:-}" ]]; then
+            echo "file_${i}=${files[$i]}" >> "$GITHUB_OUTPUT"
+          fi
+        done
+
+    - name: Upload individual compilation artifact 1
+      if: ${{ steps.find-artifacts.outputs.file_0 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_0 }}
+        retention-days: 90
+        archive: false
+
+    - name: Upload individual compilation artifact 2
+      if: ${{ steps.find-artifacts.outputs.file_1 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_1 }}
+        retention-days: 90
+        archive: false
+
+    - name: Upload individual compilation artifact 3
+      if: ${{ steps.find-artifacts.outputs.file_2 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_2 }}
+        retention-days: 90
+        archive: false
+
+    - name: Upload individual compilation artifact 4
+      if: ${{ steps.find-artifacts.outputs.file_3 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_3 }}
+        retention-days: 90
+        archive: false
+
+    - name: Upload individual compilation artifact 5
+      if: ${{ steps.find-artifacts.outputs.file_4 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_4 }}
+        retention-days: 90
+        archive: false
+
+    - name: Upload individual compilation artifact 6
+      if: ${{ steps.find-artifacts.outputs.file_5 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_5 }}
+        retention-days: 90
+        archive: false
+
+    - name: Upload individual compilation artifact 7
+      if: ${{ steps.find-artifacts.outputs.file_6 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_6 }}
+        retention-days: 90
+        archive: false
+
+    - name: Upload individual compilation artifact 8
+      if: ${{ steps.find-artifacts.outputs.file_7 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_7 }}
+        retention-days: 90
+        archive: false
+
+    - name: Upload individual compilation artifact 9
+      if: ${{ steps.find-artifacts.outputs.file_8 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_8 }}
+        retention-days: 90
+        archive: false
+
+    - name: Upload individual compilation artifact 10
+      if: ${{ steps.find-artifacts.outputs.file_9 != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.find-artifacts.outputs.file_9 }}
+        retention-days: 90
+        archive: false

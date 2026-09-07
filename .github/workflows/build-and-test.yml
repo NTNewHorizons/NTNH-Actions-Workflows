@@ -248,8 +248,8 @@ jobs:
       shell: bash
       continue-on-error: true
       run: |
-        chmod +x .gtnh-workflows/scripts/summarize_horizonqa_result
-        .gtnh-workflows/scripts/summarize_horizonqa_result
+        chmod +x .ntnh-workflows/scripts/summarize_horizonqa_result
+        .ntnh-workflows/scripts/summarize_horizonqa_result
 
     - name: Test no errors reported during server run
       id: server_errors
@@ -262,8 +262,8 @@ jobs:
       if: ${{ always() && !inputs.client-only && inputs.horizonqa && steps.run_server.conclusion != 'skipped' && steps.server_errors.conclusion == 'success' }}
       shell: bash
       run: |
-        chmod +x .gtnh-workflows/scripts/test_horizonqa_result
-        .gtnh-workflows/scripts/test_horizonqa_result
+        chmod +x .ntnh-workflows/scripts/test_horizonqa_result
+        .ntnh-workflows/scripts/test_horizonqa_result
 
     - name: Test no prerelease dependencies used
       run: |

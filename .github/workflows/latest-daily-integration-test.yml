@@ -82,11 +82,11 @@ jobs:
       - name: Checkout workflows repo
         uses: actions/checkout@v7
         with:
-          repository: GTNewHorizons/GTNH-Actions-Workflows
+          repository: NTNewHorizons/NTNH-Actions-Workflows
           ref: ${{ job.workflow_sha }}
           sparse-checkout: 
             scripts/
-          path: .gtnh-workflows
+          path: .ntnh-workflows
           fetch-depth: 0
 
       - name: Install libc so we can run our binary on alpine
@@ -109,11 +109,11 @@ jobs:
 
       - name: Run server
         timeout-minutes: 30
-        run: bash .gtnh-workflows/scripts/server.sh
+        run: bash .ntnh-workflows/scripts/server.sh
 
       - name: Verify server
         if: success() || failure()
-        run: bash .gtnh-workflows/scripts/verify_server.sh
+        run: bash .ntnh-workflows/scripts/verify_server.sh
 
   report:
     needs: [get-pr-url, full-pack-test]

@@ -8,6 +8,7 @@ on:
 
 jobs:
   build-and-test:
+    # Publishing test results (commit status, PR comment) needs statuses and pull-requests write
     uses: NTNewHorizons/NTNH-Actions-Workflows/.github/workflows/build-and-test.yml@master
     secrets: inherit
 #    with:
@@ -15,7 +16,11 @@ jobs:
 #      workspace: setupDecompWorkspace
 #      client-only: false
 #      disable-server-auto-stop: false
+#      disable-spotless-pr: false
+#      disable-test-comment: false
 #      horizonqa: true
 #      horizonqa-tests: ''
 #      horizonqa-allow-no-tests: false
 #      external-deps-inclusion: true
+#      java-distribution: temurin
+#      cache-rfg: true
